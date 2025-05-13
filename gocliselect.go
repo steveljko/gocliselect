@@ -3,12 +3,14 @@ package gocliselect
 import (
 	"errors"
 	"fmt"
-	"github.com/buger/goterm"
-	"github.com/pkg/term"
 	"log"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
+
+	"github.com/buger/goterm"
+	"github.com/pkg/term"
 )
 
 var (
@@ -20,11 +22,13 @@ type Menu struct {
 	CursorPos    int
 	ScrollOffset int
 	MenuItems    []*MenuItem
+	AllowSkip    bool
+	SkipValue    any
 }
 
 type MenuItem struct {
 	Text    string
-	ID      interface{}
+	ID      any
 	SubMenu *Menu
 }
 
@@ -32,14 +36,27 @@ func NewMenu(prompt string) *Menu {
 	return &Menu{
 		Prompt:    prompt,
 		MenuItems: make([]*MenuItem, 0),
+		AllowSkip: false,
+		SkipValue: nil,
 	}
 }
 
 // AddItem will add a new menu option to the menu list
-func (m *Menu) AddItem(option string, id interface{}) *Menu {
+func (m *Menu) AddItem(option string, id any) *Menu {
 	menuItem := &MenuItem{
-		Text: fmt.Sprintf("%d: %s", len(m.MenuItems)+1, option),
+		Text: fmt.Sprintf("%s", option),
 		ID:   id,
+	}
+
+	m.MenuItems = append(m.MenuItems, menuItem)
+	return m
+}
+
+// EnableSkip allows skipping menu with custom return value
+func (m *Menu) EnableSkip(value any) *Menu {
+	menuItem := &MenuItem{
+		Text: fmt.Sprintf("Skip"),
+		ID:   value,
 	}
 
 	m.MenuItems = append(m.MenuItems, menuItem)
@@ -76,11 +93,10 @@ func (m *Menu) renderMenuItems(redraw bool) {
 		fmt.Print(ClearLine)
 
 		if i == m.CursorPos {
-			cursor = goterm.Color("> ", goterm.YELLOW)
-			fmt.Printf("\r%s %s\n", cursor, goterm.Color(menuItem.Text, goterm.YELLOW))
-		} else {
-			fmt.Printf("\r%s %s\n", cursor, menuItem.Text)
+			cursor = "> "
 		}
+
+		fmt.Printf("\r%s%s\n", cursor, menuItem.Text)
 	}
 }
 
@@ -93,7 +109,7 @@ func min(a, b int) int {
 
 // Display will display the current menu options and awaits user selection
 // It returns the users selected choice
-func (m *Menu) Display() (interface{}, error) {
+func (m *Menu) Display() (any, error) {
 	defer func() {
 		// Show cursor again.
 		fmt.Printf(ShowCursor)
@@ -103,7 +119,11 @@ func (m *Menu) Display() (interface{}, error) {
 		return nil, ErrNoMenuItems
 	}
 
-	fmt.Printf("%s\n", goterm.Color(goterm.Bold(m.Prompt)+":", goterm.CYAN))
+	lines := strings.Split(m.Prompt, "\n")
+	for _, line := range lines {
+		fmt.Println(line)
+	}
+	fmt.Println() // Extra line after prompt
 
 	m.renderMenuItems(false)
 
