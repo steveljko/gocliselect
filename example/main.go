@@ -16,7 +16,7 @@ func main() {
 	menu.AddItem("Blue", 6)
 	menu.AddItem("Green", 7)
 	menu.AddItem("Yellow", 8)
-	menu.EnableSkip(nil)
+	menu.EnableSkip("Skip")
 
 	result, err := menu.Display()
 	if err != nil {

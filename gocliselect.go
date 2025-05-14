@@ -22,8 +22,6 @@ type Menu struct {
 	CursorPos    int
 	ScrollOffset int
 	MenuItems    []*MenuItem
-	AllowSkip    bool
-	SkipValue    any
 }
 
 type MenuItem struct {
@@ -36,8 +34,6 @@ func NewMenu(prompt string) *Menu {
 	return &Menu{
 		Prompt:    prompt,
 		MenuItems: make([]*MenuItem, 0),
-		AllowSkip: false,
-		SkipValue: nil,
 	}
 }
 
@@ -53,10 +49,10 @@ func (m *Menu) AddItem(option string, id any) *Menu {
 }
 
 // EnableSkip allows skipping menu with custom return value
-func (m *Menu) EnableSkip(value any) *Menu {
+func (m *Menu) EnableSkip(text string) *Menu {
 	menuItem := &MenuItem{
-		Text: fmt.Sprintf("Skip"),
-		ID:   value,
+		Text: text,
+		ID:   nil,
 	}
 
 	m.MenuItems = append(m.MenuItems, menuItem)
